@@ -16,34 +16,6 @@ shinyServer(function(input, output) {
   # use the normal distribution to create confidence interal for the mean
   #
   mean.unknown = function(cr, n) qnorm( (cr + 1)/2 ) / sqrt(n)
-
-  #
-  # function for confidence interal for variance
-  #
-  #   if both mean and variance unknown, use chisq_{n-1} and sum(x_i - sample(mean))
-  #   if mean is known and variance is unknown use chisq_n and sum(x_i - mu)^2
-  #   
-  #   also searches for shortest CI for given coverage rate and df
-  # 
-  grid.min.chisq = function(cr, df) {
-    inc = 0.0001 # increment for search 
-    bpinit = (1 + cr) / 2 # begin at (1 + cr) / 2
-    m = (1 - bpinit)/inc # search until left point is zero
-    
-    # determine length of interval at each increment
-    len = sapply(0:m, function(i) {
-      bp = bpinit - inc*i
-      ap = bp - cr
-      qchisq(bp, df) - qchisq(ap, df)
-    })
-    
-    # pick out index of minium interval
-    n = order(len)[1] - 1 
-    bp = bpinit - inc * n
-    ap = bp - cr
-    # return quantiles that give minimum interval on points searched
-    c(qchisq(ap, df), qchisq(bp, df))  
-  }
   
   #
   # create samples
@@ -70,7 +42,7 @@ shinyServer(function(input, output) {
   # convert the randomly generated means and variances to 
   # confidence intervals for means (for plotting)
   #
-  # outputs an array that has t rows (1 for each trial) and 8 columns
+  # outputs an array that has t rows (1 for each trial) and 10 columns
   #
   # columns 1-4 are for mean and variance unknown
   # the first 2 columns are lower and upper bound of interval
@@ -78,6 +50,8 @@ shinyServer(function(input, output) {
   # the 4th column is 1 if the interval contains the specified mean (blue)
   #                   2 if it does not contain the specified mean (red)
   # columns 5-8 are the same thing for variance known, mean unknown
+  # column 9 is the sample variance
+  # column 10 is the sample mean
   #
   make.interval.mean = function(trials, cr, n, sd, m) {
     
@@ -95,14 +69,45 @@ shinyServer(function(input, output) {
     length2 = upper2 - lower2
     s.var = trials[,2]
     s.mean = trials[,1]
-    data.frame(lower1, upper1, length1, cover1, lower2, upper2, length2, cover2, s.var, s.mean)
+    data.frame(lower1, upper1, length1, cover1, lower2, upper2, length2, cover2, 
+               s.var, s.mean)
    }
   
   interval.mean = reactive({ make.interval.mean( trials(), 
       input$cr, input$size, sqrt(input$var), input$mean ) })
 
   #
+  # functions for confidence interal for variance
+  #   
+  #   this function searches for shortest CI for given coverage rate and df
+  # 
+  grid.min.chisq = function(cr, df) {
+    inc = 0.0001 # increment for search 
+    bpinit = (1 + cr) / 2 # begin at (1 + cr) / 2
+    m = (1 - bpinit)/inc # search until left point is zero
+    
+    # determine length of interval at each increment
+    len = sapply(0:m, function(i) {
+      bp = bpinit - inc*i
+      ap = bp - cr
+      qchisq(bp, df) - qchisq(ap, df)
+    })
+    
+    # pick out index of minium interval
+    n = order(len)[1] - 1 
+    bp = bpinit - inc * n
+    ap = bp - cr
+    # return quantiles that give minimum interval on points searched
+    c(qchisq(ap, df), qchisq(bp, df))  
+  }
+
+  #
   # make intervals for variance
+  #
+  #   if both mean and variance unknown, use chisq_{n-1} and sum(x_i - sample(mean))^2
+  #   if mean is known and variance is unknown use chisq_n and sum(x_i - mu)^2
+  #
+  # output is t by 10, columns analogous to make.interval.mean above
   #
   make.interval.variance = function(trials, cr, n, v, m) {
         
@@ -120,16 +125,18 @@ shinyServer(function(input, output) {
     length2 = upper2 - lower2
     s.var = trials[,2]
     s.mean = trials[,1]
-    data.frame(lower1, upper1, length1, cover1, lower2, upper2, length2, cover2, s.var, s.mean)
+    data.frame(lower1, upper1, length1, cover1, lower2, upper2, length2, cover2, 
+               s.var, s.mean)
   }
   
   interval.variance = reactive({ make.interval.variance( trials(), 
     input$cr, input$size, input$var, input$mean ) })
   
-  
+  #
+  # creates 2 plots, the first is the confidence intervals 
+  # the second is a summary of their lengths
+  #
   make.plots = function(type.unknown, mv) {
-    #
-    # plot intervals and length of intervals
     #
     # blue for intervals containing parameter (mean or variance), 
     # red for intervals that do not
@@ -172,11 +179,11 @@ shinyServer(function(input, output) {
     else subtitle2 = paste("variance of",v)
     plot(0,0, type = "n", 
          xlim = xrange, xlab = paste(subtitle1, subtitle2), 
-         ylim = c(t,1), # this reverses ordering on y-axis so matches table, 
+         ylim = c(t,1), # this reverses ordering on y-axis so matches table 
          ylab = "Trial",
          main = title )
     mtext( paste("Coverage",cr,"  ",t, "trials; each trial has",n,"samples") )
-    # plot the trials, going from top to bottom
+    # plot the trials, going from 1 at top to t at bottom
     for (k in 1:t) lines( interval[k, c(1:2) + icol], c(k, k),
                            col = infocol[ interval[k, 4 + icol] ] )
     abline(v = vline, col = "green")
@@ -207,9 +214,13 @@ shinyServer(function(input, output) {
   }
   
   #
-  # determine whether displaying confidence intervals for mean or variance
+  # radio button
+  # determines whether displaying confidence intervals for mean or variance
   # mv = 1 is mean, mv = 2 is variance
+  #
   mv = reactive({ input$radio })
+  #
+  # create plots and display data for each tab
   #
   output$both.unknown.Plot <- renderPlot( make.plots("both", mv() ) )
   output$one.unknown.Plot  <- renderPlot( make.plots("one",  mv() ) )
