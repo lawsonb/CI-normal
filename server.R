@@ -2,21 +2,7 @@ library(shiny)
 
 
 shinyServer(function(input, output) {
-    
-  #
-  # functions to create confidence intervals for mean
-  #
-  # 
-  # if both mean and variance are unknown, then use t-distribution
-  # to create confidence interval for the mean
-  #
-  both.unknown = function(cr, n) qt( (cr + 1)/2, n-1 ) / sqrt(n)
-  #
-  # if the variance is known and the mean is unknown then 
-  # use the normal distribution to create confidence interal for the mean
-  #
-  mean.unknown = function(cr, n) qnorm( (cr + 1)/2 ) / sqrt(n)
-  
+      
   #
   # create samples
   #
@@ -42,7 +28,21 @@ shinyServer(function(input, output) {
   # convert the randomly generated means and variances to 
   # confidence intervals for means (for plotting)
   #
-  # outputs an array that has t rows (1 for each trial) and 10 columns
+  #
+  # functions to create confidence intervals for mean
+  # 
+  # if both mean and variance are unknown, then use t-distribution
+  # to create confidence interval for the mean
+  #
+  both.unknown = function(cr, n) qt( (cr + 1)/2, n-1 ) / sqrt(n)
+  #
+  # if the variance is known and the mean is unknown then 
+  # use the normal distribution to create confidence interal for the mean
+  #
+  mean.unknown = function(cr, n) qnorm( (cr + 1)/2 ) / sqrt(n)
+  #
+  #
+  # function below outputs an array that has t rows (1 for each trial) and 10 columns
   #
   # columns 1-4 are for mean and variance unknown
   # the first 2 columns are lower and upper bound of interval
