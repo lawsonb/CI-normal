@@ -20,8 +20,11 @@ shinyServer(function(input, output) {
   #
   # function for confidence interal for variance
   #
-  #   searches for shortest CI for given coverage rate and df
-  #   simple gird search
+  #   if both mean and variance unknown, use chisq_{n-1} and sum(x_i - sample(mean))
+  #   if mean is known and variance is unknown use chisq_n and sum(x_i - mu)^2
+  #   
+  #   also searches for shortest CI for given coverage rate and df
+  # 
   grid.min.chisq = function(cr, df) {
     inc = 0.0001 # increment for search 
     bpinit = (1 + cr) / 2 # begin at (1 + cr) / 2

@@ -19,22 +19,33 @@ shinyUI(fluidPage(
       sliderInput("cr",
                   "Coverage rate:",min = 0.01,max = 0.99,value = 0.95),
       sliderInput("trials",
-                  "Number of trials:",min = 10,max = 5000,value = 100),
+                  "Number of trials:",min = 10,max = 1000,value = 100),
       sliderInput("size",
-                  "Samples in each trial:",min = 2,max = 500,value = 20),
+                  "Samples in each trial:",min = 2,max = 200,value = 20),
       sliderInput("var",
                   "Variance:",min = 0.1,max = 100,value = 1),
       sliderInput("mean",
                   "Mean:",min = -10,max = 10,value = 0)
     ),    
-  mainPanel(
-    tabsetPanel(type = "tabs",  
+    mainPanel(
+      tabsetPanel(type = "tabs",  
                 tabPanel("Mean & Variance Unknown", 
                          plotOutput("both.unknown.Plot")), 
                 tabPanel("One Parameter Unknown",
                            plotOutput("one.unknown.Plot")),
                 tabPanel("Interval Data", 
                          tableOutput("interval"))
-    ))
+      ),
+      br(),
+      p("Code ",
+        a("here,", 
+          href = "https://github.com/lawsonb/CI-normal", 
+          target="_blank"),
+        " equations for confidence intervals ",
+        a("here.", 
+          href = "https://github.com/lawsonb/CI-normal/blob/master/CI-normal.pdf", 
+          target="_blank")
+      )
+    )
   )
 ))
