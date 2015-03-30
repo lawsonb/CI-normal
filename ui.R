@@ -1,6 +1,5 @@
 library(shiny)
 
-# confidence interval app with plots in tabs
 shinyUI(fluidPage(
   
   # Application title
@@ -8,7 +7,10 @@ shinyUI(fluidPage(
   
   helpText("The random samples from which the CI's are generated do not change 
            until either the Refresh button is clicked or a parameter is changed.
-           Therefore the tabs show results for the same data."),
+           Therefore the tabs show results for the same data. When the coverage
+           rate is changed new CIs are calculated for the existing data.  When 
+           changing between displaying CIs for mean and variance the existing
+           data is used."),
   
   sidebarLayout(
     sidebarPanel(

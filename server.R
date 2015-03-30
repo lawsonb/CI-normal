@@ -59,6 +59,7 @@ shinyServer(function(input, output) {
     lower1 = trials[,1] - half.length1
     upper1 = trials[,1] + half.length1
     cover1 = 2L - as.integer(lower1 <= m & m <= upper1)
+    explen = 2 * both.unknown(cr, n) * sd
     
     half.length2 = mean.unknown(cr, n) * sd 
     lower2 = trials[,1] - half.length2
@@ -70,7 +71,7 @@ shinyServer(function(input, output) {
     s.var = trials[,2]
     s.mean = trials[,1]
     data.frame(lower1, upper1, length1, cover1, lower2, upper2, length2, cover2, 
-               s.var, s.mean)
+               s.var, s.mean, explen)
    }
   
   interval.mean = reactive({ make.interval.mean( trials(), 
@@ -87,7 +88,7 @@ shinyServer(function(input, output) {
     m = (1 - bpinit)/inc # search until left point is zero
     
     # determine length of interval at each increment
-    len = sapply(0:m, function(i) {
+    len = sapply(0:(m-1), function(i) {
       bp = bpinit - inc*i
       ap = bp - cr
       qchisq(bp, df) - qchisq(ap, df)
@@ -107,7 +108,7 @@ shinyServer(function(input, output) {
   #   if both mean and variance unknown, use chisq_{n-1} and sum(x_i - sample(mean))^2
   #   if mean is known and variance is unknown use chisq_n and sum(x_i - mu)^2
   #
-  # output is t by 10, columns analogous to make.interval.mean above
+  # output is t by 12, columns analogous to make.interval.mean above
   #
   make.interval.variance = function(trials, cr, n, v, m) {
         
@@ -115,18 +116,20 @@ shinyServer(function(input, output) {
     lower1 = (n - 1) * trials[,2] / qab[2] 
     upper1 = (n - 1) * trials[,2] / qab[1] 
     cover1 = 2L - as.integer(lower1 <= v & v <= upper1)
+    explen1 = (1/qab[1] - 1/qab[2]) * n * v
     
     qab = grid.min.chisq(cr, n) 
     lower2 = trials[,3] / qab[2] 
     upper2 = trials[,3] / qab[1] 
     cover2 = 2L - as.integer(lower2 <= v & v <= upper2)
+    explen2 = (1/qab[1] - 1/qab[2]) * n * v
     
     length1 = upper1 - lower1
     length2 = upper2 - lower2
     s.var = trials[,2]
     s.mean = trials[,1]
     data.frame(lower1, upper1, length1, cover1, lower2, upper2, length2, cover2, 
-               s.var, s.mean)
+               s.var, s.mean, explen1, explen2)
   }
   
   interval.variance = reactive({ make.interval.variance( trials(), 
@@ -204,13 +207,17 @@ shinyServer(function(input, output) {
       lty = linetype
     )
     if (mv == 1) {
-      abline( v = interval[1,7], lty = linetype[2] )
+      abline( v = interval[1, "length2"], lty = linetype[2] )
+      abline( v = interval[1, "explen"], lty = linetype[1], col = "green")
       pos = "topleft"
     } else {
       lines(density(interval[,3]), lty = linetype[2])
+      abline( v = interval[1, "explen1"], lty = linetype[1], col = "green")
+      abline( v = interval[1, "explen2"], lty = linetype[2], col = "green")
       pos = "topright"
     }
     legend(pos, c("both unknown", "one unknown"), lty = linetype, cex = 0.75)
+    mtext("Expected length in green")
   }
   
   #
