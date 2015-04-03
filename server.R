@@ -34,7 +34,7 @@ shinyServer(function(input, output) {
   # if both mean and variance are unknown, then use t-distribution
   # to create confidence interval for the mean
   #
-  both.unknown = function(cr, n) qt( (cr + 1)/2, n-1 ) / sqrt(n)
+  both.unknown = function(cr, n) qt( (cr + 1)/2, n - 1 ) / sqrt(n)
   #
   # if the variance is known and the mean is unknown then 
   # use the normal distribution to create confidence interal for the mean
@@ -55,7 +55,7 @@ shinyServer(function(input, output) {
   #
   make.interval.mean = function(trials, cr, n, sd, m) {
     
-    half.length1 = both.unknown(cr, n) * sqrt(trials[,2])
+    half.length1 = both.unknown(cr, n) * sqrt( trials[,2] )
     lower1 = trials[,1] - half.length1
     upper1 = trials[,1] + half.length1
     cover1 = 2L - as.integer(lower1 <= m & m <= upper1)
@@ -135,6 +135,20 @@ shinyServer(function(input, output) {
   interval.variance = reactive({ make.interval.variance( trials(), 
     input$cr, input$size, input$var, input$mean ) })
   
+  
+  #
+  # make histogram of confidence interval lengths
+  #
+  make.histqq = function(type.unknown, mv) {
+    d = (interval.mean()[,"length1"])
+    sw = shapiro.test(d)
+    par(mfrow=c(1,2))
+    hist(d, freq= FALSE, 
+         main = paste0("Shapiro-Wilk W=",round(sw$statistic,4),
+                       "  p value=",round(sw$p.value,4)))
+    qqnorm(d)
+    qqline(d)
+  }
   #
   # creates 2 plots, the first is the confidence intervals 
   # the second is a summary of their lengths
@@ -158,7 +172,7 @@ shinyServer(function(input, output) {
       # set range of x-axis for plots so comparable across options
       xrange = m + c(-1,1)*sd*1.1
       interval = interval.mean() 
-      xrangeLen = c(0, 2*interval[1,7])
+      xrangeLen = c(0, 2*interval[1,"length2"])
       # yrangeLen = c(0, sqrt(n)/v)
     } else {
       title = paste("Variance Unknown, Mean", m)      
@@ -229,6 +243,7 @@ shinyServer(function(input, output) {
   #
   # create plots and display data for each tab
   #
+  output$both.unknown.HistQQ <- renderPlot( make.histqq("both", mv() ) )
   output$both.unknown.Plot <- renderPlot( make.plots("both", mv() ) )
   output$one.unknown.Plot  <- renderPlot( make.plots("one",  mv() ) )
   output$interval = renderTable({ if (mv()==1) interval.mean() else interval.variance() })
